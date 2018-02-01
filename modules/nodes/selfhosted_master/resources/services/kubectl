@@ -1,0 +1,22 @@
+[Unit]
+Description=Download kubectl
+ConditionPathExists=!/opt/bin/kubectl
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+
+User=root
+Group=root
+
+ExecStartPre=/usr/bin/mkdir -p /opt/bin
+ExecStart=/usr/bin/wget -N -P /opt/bin https://storage.googleapis.com/kubernetes-release/release/${hyperkube_version}/bin/linux/amd64/kubectl
+ExecStartPost=/usr/bin/chmod +x /opt/bin/kubectl
+ExecStartPost=/usr/bin/mkdir -p /home/core/.kube
+ExecStartPost=/usr/bin/cp /etc/kubernetes/kubeconfig /home/core/.kube/config
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target

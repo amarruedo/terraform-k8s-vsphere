@@ -1,0 +1,42 @@
+[Service]
+EnvironmentFile=/etc/environment
+Environment=KUBELET_IMAGE_URL=docker://${kubelet_image_url}
+Environment=KUBELET_IMAGE_TAG=${kubelet_image_tag}
+Environment="RKT_RUN_ARGS=--uuid-file-save=/var/cache/kubelet-pod.uuid \
+  --volume var-lib-cni,kind=host,source=/var/lib/cni \
+  --volume opt-cni-bin,kind=host,source=/opt/cni/bin \
+  --volume var-log,kind=host,source=/var/log \
+  --mount volume=var-log,target=/var/log \
+  --mount volume=var-lib-cni,target=/var/lib/cni \
+  --mount volume=opt-cni-bin,target=/opt/cni/bin \
+  --insecure-options=image"
+ExecStartPre=/usr/bin/chmod 444 /sys/class/dmi/id/product_serial
+ExecStartPre=/bin/mkdir -p /opt/cni/bin
+ExecStartPre=/bin/mkdir -p /etc/kubernetes/manifests
+ExecStartPre=/bin/mkdir -p /etc/kubernetes/cni/net.d
+ExecStartPre=/bin/mkdir -p /etc/kubernetes/checkpoint-secrets
+ExecStartPre=/bin/mkdir -p /etc/kubernetes/inactive-manifests
+ExecStartPre=/bin/mkdir -p /var/lib/cni
+ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/cache/kubelet-pod.uuid
+ExecStart=/usr/lib/coreos/kubelet-wrapper \
+  --allow-privileged \
+  --anonymous-auth=false \
+  --client-ca-file=/etc/kubernetes/ca.crt \
+  --cloud-provider=vsphere \
+  --cloud-config=/etc/kubernetes/cloud/config \
+  --cluster_dns=10.3.0.10 \
+  --cluster_domain=cluster.local \
+  --cni-conf-dir=/etc/kubernetes/cni/net.d \
+  --exit-on-lock-contention \
+  --hostname-override=${hostname} \
+  --kubeconfig=/etc/kubernetes/kubeconfig \
+  --lock-file=/var/run/lock/kubelet.lock \
+  --network-plugin=cni \
+  ${node_labels_and_taints} \
+  --pod-manifest-path=/etc/kubernetes/manifests
+ExecStop=-/usr/bin/rkt stop --uuid-file=/var/cache/kubelet-pod.uuid
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,5 @@
+*.tfstate
+*.tfstate.backup
+.terraform
+generated/
+login.sh

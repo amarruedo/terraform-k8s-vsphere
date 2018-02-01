@@ -1,0 +1,24 @@
+[Unit]
+Description=Bootstrap a Kubernetes cluster
+ConditionPathExists=!/opt/bootkube/init_bootkube.done
+Wants=kubelet.service
+After=kubelet.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+
+User=root
+Group=root
+
+ExecStart=/usr/bin/docker run \
+    --volume /opt/bootkube:/assets \
+    --volume /etc/kubernetes:/etc/kubernetes \
+    --network=host \
+    ${bootkube_image} \
+    /bootkube start --asset-dir=/assets
+ExecStartPost=/bin/touch /opt/bootkube/init_bootkube.done
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target

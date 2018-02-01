@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bootstrap-kube-controller-manager
+  namespace: kube-system
+spec:
+  containers:
+  - name: kube-controller-manager
+    image: ${hyperkube_image}
+    command:
+    - ./hyperkube
+    - controller-manager
+    - --allocate-node-cidrs=true
+    - --cluster-cidr=${cluster_cidr}
+    - --service-cluster-ip-range=${service_cidr}
+    - --cloud-provider=vsphere
+    - --cloud-config=/etc/kubernetes/cloud/config
+    - --configure-cloud-routes=false
+    - --kubeconfig=/etc/kubernetes/kubeconfig
+    - --leader-elect=true
+    - --root-ca-file=/etc/kubernetes/bootstrap-secrets/ca.crt
+    - --service-account-private-key-file=/etc/kubernetes/bootstrap-secrets/service-account.key
+    volumeMounts:
+    - name: kubernetes
+      mountPath: /etc/kubernetes
+      readOnly: true
+    - name: ssl-host
+      mountPath: /etc/ssl/certs
+      readOnly: true
+    - mountPath: /etc/kubernetes/cloud
+      name: clod-config
+      readOnly: true
+  hostNetwork: true
+  volumes:
+  - name: kubernetes
+    hostPath:
+      path: /etc/kubernetes
+  - name: ssl-host
+    hostPath:
+      path: /usr/share/ca-certificates
+  - name: clod-config
+    hostPath:
+      path: /etc/kubernetes/cloud
